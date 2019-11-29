@@ -1,0 +1,39 @@
+﻿<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Net.Http" #>
+<#@ import namespace="System.Linq" #>
+
+<#
+var model = new {
+                Badges = new [] {
+                                    new { Property = "AvatarNotFound", ShieldIoUrl = "https://raster.shields.io/badge/avatar-not_found-lightgrey.png"},
+									new { Property = "AvatarDenied", ShieldIoUrl = "https://raster.shields.io/badge/avatar-denied-red.png"},
+                                    new { Property = "AvatarUnhandledExeption", ShieldIoUrl = "https://raster.shields.io/badge/avatar-unhandled_exception-red.png"},
+
+                                }
+            };
+#>
+using Microsoft.AspNetCore.Mvc;
+
+namespace Hawk.API
+{
+    public static class Shields
+    {
+        public const string SvgContentType = "image/png";
+<#
+var client = new System.Net.Http.HttpClient();
+foreach(var badge in model.Badges) {
+
+var shieldData = client.GetByteArrayAsync(badge.ShieldIoUrl).GetAwaiter().GetResult();
+var dataString = string.Join(
+        ", ",
+        shieldData.Select(
+            data=>string.Format("0x{0:x2}", data)
+        )
+    );
+    #>
+        private static readonly byte[] <#=badge.Property#> = { <#=dataString #> };
+        public static FileContentResult <#=badge.Property#>Result { get; } = new FileContentResult(<#=badge.Property#>, SvgContentType);
+<#
+}#>
+    }
+}

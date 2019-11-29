@@ -1,0 +1,36 @@
+name: $(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
+trigger:
+- master
+
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+variables:
+  buildConfiguration: 'Release'
+  artifactName: 'Hawk.API'
+
+steps:
+
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk'
+  inputs:
+    packageType: sdk
+    version: 2.1.802
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- script: dotnet publish --configuration $(BuildConfiguration) --output "$(Build.ArtifactStagingDirectory)/Output"  /p:Version=$(Build.BuildNumber) src/Hawk.API/Hawk.API.csproj
+  displayName: .NET Publish $(ArtifactName)
+
+- task: ArchiveFiles@2
+  displayName: Archive Output $(ArtifactName)
+  inputs:
+    rootFolderOrFile: $(Build.ArtifactStagingDirectory)/Output
+    includeRootFolder: false
+    archiveFile: $(Build.ArtifactStagingDirectory)/$(ArtifactName).zip
+
+- task: PublishPipelineArtifact@0
+  displayName: Publish Pipeline Artifact $(ArtifactName)
+  inputs:
+    artifactName: $(ArtifactName)
+
+    targetPath: '$(Build.ArtifactStagingDirectory)'
